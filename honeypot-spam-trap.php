@@ -78,6 +78,8 @@ class HoneypotSpamTrap {
 	
 	// Remove the hash string from the correct comment fields before submitting
 	public function unhash_comment_fields ( $commentdata ) {
+		$hash = $this->get_hash();
+		
 		if( isset( $_POST['author' . $hash] ) ) {
 			$_POST['author'] = sanitize_text_field( $_POST['author' . $hash] );
 		}
