@@ -138,7 +138,7 @@ class HoneypotSpamTrap {
 	}
 	
 	public function add_hide_css( ) {
-		echo '<style>.hide{display:none;}</style>';
+		echo '<style>.hide{display:none !important;}</style>';
 	}
 	
 }
