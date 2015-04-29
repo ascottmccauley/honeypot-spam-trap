@@ -38,16 +38,8 @@ class HoneypotSpamTrap {
 		add_action( 'login_enqueue_scripts', array( $this, 'add_hide_css' ) );
 	}
 	
-	// Creates a random 6 digit number for 24 hours
-	public function get_hash() {
-		srand( date( 'Ymd' ) );
-		$number = rand( 0,9999999 );
-		$hash = substr( sha1( $number ), 0, 6);
-		return $hash;
-	}
-	
 	public function get_decoy_fields( ) {
-		$hash = $this->get_hash();
+		$hash = wp_create_nonce( 'spam_trap' );
 		$decoy_fields = '';
 		foreach ( $this->fields as $field ) {
 			$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
@@ -59,7 +51,7 @@ class HoneypotSpamTrap {
 	// Add decoy fields to the comment form
 	public function add_comment_trap( $args ) {
 		if ( !is_user_logged_in() ) {
-			$hash = $this->get_hash();
+			$hash = wp_create_nonce( 'spam_trap' );
 			
 			// reverse order to place decoys at front of form.
 			$args['fields'] = array_reverse( $args['fields'], true );
@@ -78,7 +70,7 @@ class HoneypotSpamTrap {
 	
 	// Remove the hash string from the correct comment fields before submitting
 	public function unhash_comment_fields ( $commentdata ) {
-		$hash = $this->get_hash();
+		$hash = wp_create_nonce( 'spam_trap' );
 		
 		if( isset( $_POST['author' . $hash] ) ) {
 			$_POST['author'] = sanitize_text_field( $_POST['author' . $hash] );
@@ -97,7 +89,7 @@ class HoneypotSpamTrap {
 			exit;
 		}
 		if ( $approved != 'spam' || is_user_logged_in() ) { // No need to check twice
-			$hash = $this->get_hash();
+			$hash = wp_create_nonce( 'spam_trap' );
 			foreach ( $this->fields as $field ) {
 				$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
 				// if any decoy field has been filled out mark it as spam
@@ -125,7 +117,7 @@ class HoneypotSpamTrap {
 			exit;
 		}
 		if ( !$errors->get_error_code() ) { // Check to see if there are already errors
-			$hash = $this->get_hash(); 
+			$hash = wp_create_nonce( 'spam_trap' );
 			foreach ( $this->fields as $field ) {
 				$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
 				if( isset( $_POST[$name] ) ) {
