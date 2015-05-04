@@ -27,11 +27,11 @@ class HoneypotSpamTrap {
 		
 		// Add trap to login form
 		add_action( 'login_form', array( $this, 'add_login_trap' ) );
-		add_action( 'login_errors', array( $this, 'check_login_trap' ), 10, 3 );
+		add_filter( 'authenticate', array( $this, 'check_login_trap' ), 10, 3 );
 		
 		// Add trap to registration form
 		add_action( 'register_form', array( $this, 'add_login_trap' ) );
-		add_action( 'registration_errors', array( $this, 'check_login_trap' ), 10, 3 );
+		add_filter( 'registration_errors', array( $this, 'check_login_trap' ) );
 		
 		// Add inline style to hide fields
 		add_action( 'wp_enqueue_scripts', array( $this, 'add_hide_css' ) );
@@ -50,7 +50,7 @@ class HoneypotSpamTrap {
 	
 	// Add decoy fields to the comment form
 	public function add_comment_trap( $args ) {
-		if ( !is_user_logged_in() ) {
+		if ( ! is_user_logged_in() ) {
 			$hash = wp_create_nonce( 'spam_trap' );
 			
 			// reverse order to place decoys at front of form.
@@ -109,24 +109,21 @@ class HoneypotSpamTrap {
 	}
 	
 	// Check the register form and throw up a non-descript error
-	public function check_login_trap( $errors, $sanitized_user_login, $user_email ) {
+	public function check_login_trap( $user ) {
 		// first check http_referer
 		$siteURL = str_ireplace( 'www.', '', parse_url( home_url(), PHP_URL_HOST ) );
 		if ( !stripos( $_SERVER['HTTP_REFERER'], $siteURL ) ) {
-			wp_die( 'There was an error submitting your comment.', 'Error' );
-			exit;
+			$user = new WP_Error( 'loginError',  'There is an error with the url' );
 		}
-		if ( !$errors->get_error_code() ) { // Check to see if there are already errors
-			$hash = wp_create_nonce( 'spam_trap' );
-			foreach ( $this->fields as $field ) {
-				$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
-				if( isset( $_POST[$name] ) ) {
-					wp_die( 'There was an error submitting your registration', 'Error' );
-					exit;
-				}
+		
+		$hash = wp_create_nonce( 'spam_trap' );
+		foreach ( $this->fields as $field ) {
+			$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
+			if( isset( $_POST[$name] ) ) {
+				$user = new WP_Error( 'loginError',  'There is an error with the submissino' );
 			}
 		}
-		return $errors;
+		return $user;
 	}
 	
 	public function add_hide_css( ) {
