@@ -84,19 +84,20 @@ class HoneypotSpamTrap {
 	public function check_comment_trap( $comment_id, $approved = 'null' ) {
 		// first check http_referer
 		$siteURL = str_ireplace( 'www.', '', parse_url( home_url(), PHP_URL_HOST ) );
-		if ( !stripos( $_SERVER['HTTP_REFERER'], $siteURL ) ) {
+		if ( isset( $_SERVER['HTTP_REFERER'] ) && !stripos( $_SERVER['HTTP_REFERER'], $siteURL ) ) {
 			wp_die( 'There was an error submitting your comment.', 'Error' );
 			exit;
-		}
-		if ( $approved != 'spam' || is_user_logged_in() ) { // No need to check twice
-			$hash = wp_create_nonce( 'spam_trap' );
-			foreach ( $this->fields as $field ) {
-				$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
-				// if any decoy field has been filled out mark it as spam
-				if ( isset ( $_POST[$name] ) ) {
-					if( $_POST[$name] != '' ) {
-						wp_spam_comment( $comment_id );
-						exit;
+		} else {
+			if ( $approved != 'spam' || is_user_logged_in() ) { // No need to check twice
+				$hash = wp_create_nonce( 'spam_trap' );
+				foreach ( $this->fields as $field ) {
+					$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
+					// if any decoy field has been filled out mark it as spam
+					if ( isset ( $_POST[$name] ) ) {
+						if( $_POST[$name] != '' ) {
+							wp_spam_comment( $comment_id );
+							exit;
+						}
 					}
 				}
 			}
@@ -112,15 +113,16 @@ class HoneypotSpamTrap {
 	public function check_login_trap( $user ) {
 		// first check http_referer
 		$siteURL = str_ireplace( 'www.', '', parse_url( home_url(), PHP_URL_HOST ) );
-		if ( !stripos( $_SERVER['HTTP_REFERER'], $siteURL ) ) {
+		if ( isset( $_SERVER['HTTP_REFERER'] ) && ! stripos( $_SERVER['HTTP_REFERER'], $siteURL ) ) {
 			$user = new WP_Error( 'loginError',  'There is an error with the url' );
-		}
+		} else {
 		
-		$hash = wp_create_nonce( 'spam_trap' );
-		foreach ( $this->fields as $field ) {
-			$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
-			if( isset( $_POST[$name] ) ) {
-				$user = new WP_Error( 'loginError',  'There is an error with the submissino' );
+			$hash = wp_create_nonce( 'spam_trap' );
+			foreach ( $this->fields as $field ) {
+				$name = strtolower( str_replace( ' ', '', $field ) ) . $hash;
+				if( isset( $_POST[$name] ) ) {
+					$user = new WP_Error( 'loginError',  'There is an error with the submissino' );
+				}
 			}
 		}
 		return $user;
